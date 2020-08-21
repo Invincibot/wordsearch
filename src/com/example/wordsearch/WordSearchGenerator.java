@@ -6,22 +6,32 @@ import java.util.ArrayList;
 import java.io.FileWriter;
 import java.lang.StringBuilder;
 
-public class WordSearchGenerator {
-    public static void main(String[] args) {
-        WordSearch wordsearch = new WordSearch(100, 100);
-        wordsearch.GenerateWordSearch(100, 10);
+class WordSearchGenerator extends WordSearch {
+    GeneratedWord[] generatedWords;
+    int minWordLen;
 
+    public static void main(String[] args) {
+        WordSearchGenerator wordsearch = new WordSearchGenerator(15, 10);
+        wordsearch.GenerateWordSearch(5, 5);
+        wordsearch.WriteToFile();
+    }
+
+    WordSearchGenerator(int w, int h) {
+        super(w, h);
+    }
+
+    public void WriteToFile() {
         try {
             FileWriter file = new FileWriter("wordsearch.txt");
-            file.write(wordsearch.width + " " + wordsearch.height + " " + wordsearch.words.size() + "\n");
-            for (int i = 0; i < wordsearch.width; i++) {
-                for (int j = 0; j < wordsearch.height; j++) {
-                    file.write(wordsearch.wordsearch[i][j] + " ");
+            file.write(this.width + " " + this.height + " " + this.generatedWords.length + "\n");
+            for (int i = 0; i < this.height; i++) {
+                for (int j = 0; j < this.width; j++) {
+                    file.write(this.wordsearch[j][i] + " ");
                 }
                 file.write("\n");
             }
 
-            for (GeneratedWord word : wordsearch.words) {
+            for (GeneratedWord word : this.generatedWords) {
                 file.write(word.word + "\n");
             }
 
@@ -33,24 +43,10 @@ public class WordSearchGenerator {
             e.printStackTrace();
         }
     }
-}
-
-class WordSearch {
-    int width;
-    int height;
-    char[][] wordsearch;
-    ArrayList<GeneratedWord> words;
-    int minWordLen;
-
-    WordSearch(int w, int h) {
-        this.width = w;
-        this.height = h;
-        this.wordsearch = new char[w][h];
-        this.words = new ArrayList<>();
-        this.minWordLen = 0;
-    }
 
     public void GenerateWordSearch(int numWords, int minLen) {
+        this.generatedWords = new GeneratedWord[numWords];
+        this.words = new String[numWords];
         this.minWordLen = minLen;
 
         Random random = new Random();
@@ -61,11 +57,12 @@ class WordSearch {
         }
 
         for (int i = 0; i < numWords; i++) {
-            GenerateWord();
+            this.generatedWords[i] = GenerateWord();
+            this.words[i] = generatedWords[i].word;
         }
     }
 
-    private void GenerateWord() {
+    private GeneratedWord GenerateWord() {
         GeneratedWord word = new GeneratedWord();
         Random random = new Random();
         outer:
@@ -74,12 +71,8 @@ class WordSearch {
             word.direction.SetCoordinates(random.nextInt(3) - 1, random.nextInt(3) - 1);
             word.length = minWordLen;
 
-            System.out.println(word.CheckValidPlacement(this.width, this.height));
             if (!word.CheckValidPlacement(this.width, this.height) || word.direction.x == 0 && word.direction.y == 0)
                 continue;
-
-            System.out.println("Word starts at " + word.start.x + ", " + word.start.y);
-            System.out.println("Word travels in the direction of " + word.direction.x + ", " + word.direction.y);
 
             int maxx = Math.max(this.width, this.height);
             int maxy = maxx;
@@ -96,9 +89,11 @@ class WordSearch {
             int maxLen = Math.min(maxx, maxy);
             word.length = random.nextInt(maxLen - this.minWordLen + 1) + this.minWordLen;
 
-            System.out.println("Word has length of " + word.length);
+            for (Word other : this.generatedWords) {
+                if (other == null) {
+                    break outer;
+                }
 
-            for (Word other : this.words) {
                 if (word.CollidesWith(other)) {
                     continue outer;
                 }
@@ -111,7 +106,20 @@ class WordSearch {
             sb.append(this.wordsearch[word.start.x + word.direction.x * i][word.start.y + word.direction.y * i]);
         }
         word.word = sb.toString();
-        this.words.add(word);
+        return word;
+    }
+}
+
+class WordSearch {
+    int width;
+    int height;
+    char[][] wordsearch;
+    String[] words;
+
+    WordSearch(int w, int h) {
+        this.width = w;
+        this.height = h;
+        this.wordsearch = new char[w][h];
     }
 }
 

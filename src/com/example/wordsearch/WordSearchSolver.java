@@ -3,7 +3,6 @@ package com.example.wordsearch;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -13,14 +12,14 @@ public class WordSearchSolver {
     int height;
     char[][] wordsearch;
     SolvedWord[] words;
-    ArrayList<SolvedWord> wordsToBeSolved;
 
     public void ReadFromFile() {
         try {
             File file = new File("wordsearch.txt");
             Scanner scanner = new Scanner(file);
-            this.width = scanner.nextInt();
+            // Necessary swap due to elements being printed to match human 'width' and 'height'
             this.height = scanner.nextInt();
+            this.width = scanner.nextInt();
             this.words = new SolvedWord[scanner.nextInt()];
             this.wordsearch = new char[this.width][this.height];
             scanner.nextLine();
@@ -32,7 +31,6 @@ public class WordSearchSolver {
                 this.words[i].wordChar = scanner.next().toCharArray();
                 this.words[i].length = this.words[i].wordChar.length;
             }
-            this.wordsToBeSolved = new ArrayList<>(Arrays.asList(this.words));
             scanner.close();
         } catch (Exception e) {
             System.out.println("An error occurred.");
@@ -63,66 +61,35 @@ public class WordSearchSolver {
         }
     }
 
-    public void Solve(int width, int height, char[][] wordsearch, String[] words) {
-        this.width = width;
-        this.height = height;
-        this.wordsearch = wordsearch;
-        this.words = new SolvedWord[words.length];
-        for (int i = 0; i < words.length; i++) {
+    public void Solve(WordSearch ws) {
+        this.width = ws.width;
+        this.height = ws.height;
+        this.wordsearch = ws.wordsearch;
+        this.words = new SolvedWord[ws.words.length];
+        for (int i = 0; i < ws.words.length; i++) {
             this.words[i] = new SolvedWord();
-            this.words[i].wordChar = words[i].toCharArray();
+            this.words[i].wordChar = ws.words[i].toCharArray();
             this.words[i].length = this.words[i].wordChar.length;
         }
 
         this.Solve();
     }
 
-    public void Solve() {}
-}
-
-class WordSearchSolverAless extends WordSearchSolver {
-    public static void main(String[] args) {
-        WordSearchSolverAless cs = new WordSearchSolverAless();
-        cs.ReadFromFile();
-        cs.Solve();
-        cs.WriteToFile();
-    }
-
-    public void Solve() {
-        outer:
-        for (int i = 0; i < this.width; i++) {
-            for (int j = 0; j < this.height; j++) {
-                if (wordsToBeSolved.size() == 0)
-                    break outer;
-
-                for (SolvedWord word : this.wordsToBeSolved) {
-                    CheckWordAtPosition(word, i, j);
-                }
-            }
-
-            for (SolvedWord word : this.words) {
-                if (word.solved)
-                    this.wordsToBeSolved.remove(word);
-            }
-        }
-
-        if (wordsToBeSolved.size() != 0)
-            this.solvable = false;
-    }
+    void Solve() {}
 
     void CheckWordAtPosition(SolvedWord word, int x, int y) {
         word.start.SetCoordinates(x, y);
 
         boolean[] yDirs = {true, true, true};
         for (int i = -1; i <= 1; i++) {
-            if (i == -1 && x <= word.length || i == 1 && x > this.width - word.length)
+            if (i == -1 && x < word.length - 1 || i == 1 && x > this.width - word.length)
                 continue;
 
             for (int j = 0; j <= 2; j++) {
                 if (!yDirs[j] || i == 0 && j == 1)
                     continue;
 
-                else if (j == 0 && y <= word.length || j == 2 && y > this.height - word.length) {
+                else if (j == 0 && y < word.length - 1 || j == 2 && y > this.height - word.length) {
                     yDirs[j] = false;
                     continue;
                 }
@@ -145,11 +112,65 @@ class WordSearchSolverAless extends WordSearchSolver {
     }
 }
 
+class WordSearchSolverAless extends WordSearchSolver {
+    public static void main(String[] args) {
+        WordSearchSolverAless cs = new WordSearchSolverAless();
+        cs.ReadFromFile();
+        cs.Solve();
+        cs.WriteToFile();
+    }
+
+    public void Solve() {
+        this.solvable = true;
+
+        for (int i = 0; i < this.width; i++) {
+            for (int j = 0; j < this.height; j++) {
+                for (SolvedWord word : this.words) {
+                    if (word.solved)
+                        continue;
+
+                    CheckWordAtPosition(word, i, j);
+                }
+            }
+        }
+
+        for (SolvedWord word : this.words) {
+            if (!word.solved) {
+                this.solvable = false;
+                return;
+            }
+        }
+    }
+}
+
+class WordSearchSolverLuigi extends WordSearchSolver {
+    public static void main(String[] args) {
+        WordSearchSolverLuigi cs = new WordSearchSolverLuigi();
+        cs.ReadFromFile();
+        cs.Solve();
+        cs.WriteToFile();
+    }
+
+    public void Solve() {
+        this.solvable = true;
+
+        outer:
+        for (SolvedWord word : this.words) {
+            for (int i = 0; i < this.width; i++) {
+                for(int j = 0; j < this.height; j++) {
+                    CheckWordAtPosition(word, i, j);
+                    if (word.solved)
+                        continue outer;
+                }
+            }
+
+            this.solvable = false;
+            return;
+        }
+    }
+}
+
 class SolvedWord extends Word {
     boolean solved;
     char[] wordChar;
-
-    SolvedWord() {
-        this.solved = false;
-    }
 }
