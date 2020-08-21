@@ -1,4 +1,4 @@
-package com.example.crosswordsolver;
+package com.example.wordsearch;
 
 import java.io.IOException;
 import java.util.Random;
@@ -6,22 +6,22 @@ import java.util.ArrayList;
 import java.io.FileWriter;
 import java.lang.StringBuilder;
 
-public class CrosswordGenerator {
+public class WordSearchGenerator {
     public static void main(String[] args) {
-        Crossword crossword = new Crossword(15, 15);
-        crossword.GenerateCrossword(5, 10);
+        WordSearch wordsearch = new WordSearch(100, 100);
+        wordsearch.GenerateWordSearch(100, 10);
 
         try {
-            FileWriter file = new FileWriter("crossword.txt");
-            file.write("10 10\n");
-            for (int i = 0; i < 10; i++) {
-                for (int j = 0; j < 10; j++) {
-                    file.write(crossword.crossword[i][j] + " ");
+            FileWriter file = new FileWriter("wordsearch.txt");
+            file.write(wordsearch.width + " " + wordsearch.height + " " + wordsearch.words.size() + "\n");
+            for (int i = 0; i < wordsearch.width; i++) {
+                for (int j = 0; j < wordsearch.height; j++) {
+                    file.write(wordsearch.wordsearch[i][j] + " ");
                 }
                 file.write("\n");
             }
 
-            for (Word word : crossword.words) {
+            for (GeneratedWord word : wordsearch.words) {
                 file.write(word.word + "\n");
             }
 
@@ -35,28 +35,28 @@ public class CrosswordGenerator {
     }
 }
 
-class Crossword {
+class WordSearch {
     int width;
     int height;
-    char[][] crossword;
-    ArrayList<Word> words;
+    char[][] wordsearch;
+    ArrayList<GeneratedWord> words;
     int minWordLen;
 
-    Crossword(int w, int h) {
+    WordSearch(int w, int h) {
         this.width = w;
         this.height = h;
-        this.crossword = new char[w][h];
+        this.wordsearch = new char[w][h];
         this.words = new ArrayList<>();
         this.minWordLen = 0;
     }
 
-    public void GenerateCrossword(int numWords, int minLen) {
+    public void GenerateWordSearch(int numWords, int minLen) {
         this.minWordLen = minLen;
 
         Random random = new Random();
         for (int i = 0; i < this.width; i++) {
             for (int j = 0; j < this.height; j++) {
-                this.crossword[i][j] = (char)('a' + random.nextInt(26));
+                this.wordsearch[i][j] = (char)('a' + random.nextInt(26));
             }
         }
 
@@ -66,44 +66,35 @@ class Crossword {
     }
 
     private void GenerateWord() {
-        Word word = new Word();
+        GeneratedWord word = new GeneratedWord();
         Random random = new Random();
         outer:
         while (true) {
-            word.start.x = random.nextInt(this.width);
-            word.start.y = random.nextInt(this.height);
-            word.direction.x = random.nextInt(3) - 1;
-            word.direction.y = random.nextInt(3) - 1;
-            if (
-                    (word.start.x < minWordLen - 1 && word.direction.x < 0) ||
-                    (word.start.x > this.width - minWordLen && word.direction.x > 0) ||
-                    (word.start.y < minWordLen - 1 && word.direction.y < 0) ||
-                    (word.start.y > this.height - minWordLen && word.direction.y > 0) ||
-                    (word.direction.x == 0 && word.direction.y == 0)
-            ) {
-                System.out.println("continuing...");
-                continue;
-            }
+            word.start.SetCoordinates(random.nextInt(this.width), random.nextInt(this.height));
+            word.direction.SetCoordinates(random.nextInt(3) - 1, random.nextInt(3) - 1);
+            word.length = minWordLen;
 
-            System.out.println("Not continuing...");
+            System.out.println(word.CheckValidPlacement(this.width, this.height));
+            if (!word.CheckValidPlacement(this.width, this.height) || word.direction.x == 0 && word.direction.y == 0)
+                continue;
 
             System.out.println("Word starts at " + word.start.x + ", " + word.start.y);
             System.out.println("Word travels in the direction of " + word.direction.x + ", " + word.direction.y);
 
-            int maxx = this.width, maxy = this.height;
+            int maxx = Math.max(this.width, this.height);
+            int maxy = maxx;
             if (word.direction.x == 1)
-                maxx = this.width - word.start.x + 1;
+                maxx = this.width - word.start.x;
             else if (word.direction.x == -1)
                 maxx = word.start.x + 1;
 
             if (word.direction.y == 1)
-                maxy = this.height - word.start.y + 1;
+                maxy = this.height - word.start.y;
             else if (word.direction.y == -1)
                 maxy = word.start.y + 1;
 
             int maxLen = Math.min(maxx, maxy);
             word.length = random.nextInt(maxLen - this.minWordLen + 1) + this.minWordLen;
-
 
             System.out.println("Word has length of " + word.length);
 
@@ -117,24 +108,15 @@ class Crossword {
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < word.length; i++) {
-            sb.append(this.crossword[word.start.x + word.direction.x * i][word.start.y + word.direction.y * i]);
+            sb.append(this.wordsearch[word.start.x + word.direction.x * i][word.start.y + word.direction.y * i]);
         }
+        word.word = sb.toString();
         this.words.add(word);
     }
 }
 
-class Word {
-    Coordinate start;
-    Coordinate direction;
-    int length;
+class GeneratedWord extends Word {
     String word;
-
-    Word() {
-        start = new Coordinate(0, 0);
-        direction = new Coordinate(0, 0);
-        length = 0;
-        word = "";
-    }
 
     public boolean CollidesWith(Word other) {
         Coordinate[] coords1 = this.GenerateCoordinates();
@@ -157,6 +139,17 @@ class Word {
 
         return false;
     }
+}
+
+class Word {
+    Coordinate start;
+    Coordinate direction;
+    int length;
+
+    Word() {
+        this.start = new Coordinate();
+        this.direction = new Coordinate();
+    }
 
     public Coordinate[] GenerateCoordinates() {
         Coordinate[] coordinates = new Coordinate[this.length];
@@ -166,15 +159,30 @@ class Word {
 
         return coordinates;
     }
+
+    public boolean CheckValidPlacement(int width, int height) {
+        return !((this.start.x <= this.length && this.direction.x < 0) ||
+                (this.start.x > width - this.length && this.direction.x > 0) ||
+                (this.start.y <= this.length && this.direction.y < 0) ||
+                (this.start.y > height - this.length && this.direction.y > 0));
+    }
 }
 
 class Coordinate {
     int x;
     int y;
 
-    Coordinate(int newX, int newY) {
-        this.x = newX;
-        this.y = newY;
+    Coordinate(int x, int y) {
+        this.SetCoordinates(x, y);
+    }
+
+    Coordinate() {
+        this.SetCoordinates(0, 0);
+    }
+
+    public void SetCoordinates(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
     public boolean Equals(Coordinate other) {
