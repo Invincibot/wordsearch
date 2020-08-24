@@ -78,6 +78,9 @@ public class WordSearchSolver {
     void Solve() {}
 
     void CheckWordAtPosition(SolvedWord word, int x, int y) {
+        if (this.wordsearch[x][y] != word.wordChar[0])
+            return;
+
         word.start.SetCoordinates(x, y);
 
         boolean[] yDirs = {true, true, true};
@@ -104,12 +107,17 @@ public class WordSearchSolver {
     }
 
     boolean CheckWordToLetters(SolvedWord word) {
-        for (int i = 0; i < word.length; i++) {
+        for (int i = 1; i < word.length; i++) {
             if (word.wordChar[i] != wordsearch[word.start.x + word.direction.x * i][word.start.y + word.direction.y * i])
                 return false;
         }
         return true;
     }
+}
+
+class SolvedWord extends Word {
+    boolean solved;
+    char[] wordChar;
 }
 
 class WordSearchSolverAless extends WordSearchSolver {
@@ -170,7 +178,85 @@ class WordSearchSolverLuigi extends WordSearchSolver {
     }
 }
 
-class SolvedWord extends Word {
-    boolean solved;
-    char[] wordChar;
+class WordSearchSolverMixed extends WordSearchSolver {
+    static Coordinate[] directions = {
+            new Coordinate(-1, 1),
+            new Coordinate(0, 1),
+            new Coordinate(1, 1),
+            new Coordinate(1, 0)
+    };
+
+    public static void main(String[] args) {
+        WordSearchSolverMixed cs = new WordSearchSolverMixed();
+        cs.ReadFromFile();
+        cs.Solve();
+        cs.WriteToFile();
+    }
+
+    public void Solve() {
+        this.solvable = true;
+
+        outer:
+        for (SolvedWord word : this.words) {
+            inner:
+            for (int i = 0; i < this.width; i++) {
+                for (int j = 0; j < this.height; j++) {
+                    if (this.width - i < word.length && this.height - j < word.length)
+                        continue inner;
+                    CheckWordAtPosition(word, i, j);
+                    if (word.solved)
+                        continue outer;
+                }
+            }
+
+            System.out.println(word.wordChar);
+            this.solvable = false;
+            return;
+        }
+    }
+
+    void CheckWordAtPosition(SolvedWord word, int x, int y) {
+        if (this.wordsearch[x][y] != word.wordChar[0] && this.wordsearch[x][y] != word.wordChar[word.wordChar.length - 1])
+            return;
+
+        word.start.SetCoordinates(x, y);
+
+        for (Coordinate direction : directions) {
+            int endx = word.start.x + direction.x * (word.length - 1);
+            if (endx < 0 || endx >= this.width)
+                continue;
+
+
+            int endy = word.start.y + direction.y * (word.length - 1);
+            if (endy >= this.height)
+                continue;
+
+            word.direction.SetCoordinates(direction.x, direction.y);
+            if (CheckWordToLetters(word)) {
+                word.solved = true;
+                return;
+            }
+        }
+    }
+
+    boolean CheckWordToLetters(SolvedWord word) {
+        boolean forward = true;
+        boolean backward = true;
+        for (int i = 1; i < word.length; i++) {
+            char c = wordsearch[word.start.x + word.direction.x * i][word.start.y + word.direction.y * i];
+            if (forward && word.wordChar[i] != c)
+                forward = false;
+            if (backward && word.wordChar[word.length - i - 1] != c)
+                backward = false;
+            if (!forward && !backward)
+                return false;
+        }
+        if (backward) {
+            word.start.x += word.direction.x * word.length;
+            word.start.y += word.direction.y * word.length;
+            word.direction.x *= -1;
+            word.direction.y *= -1;
+        }
+        return true;
+    }
 }

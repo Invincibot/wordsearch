@@ -2,7 +2,6 @@ package com.example.wordsearch;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.ArrayList;
 import java.io.FileWriter;
 import java.lang.StringBuilder;
 
@@ -11,37 +10,13 @@ class WordSearchGenerator extends WordSearch {
     int minWordLen;
 
     public static void main(String[] args) {
-        WordSearchGenerator wordsearch = new WordSearchGenerator(15, 10);
-        wordsearch.GenerateWordSearch(5, 5);
+        WordSearchGenerator wordsearch = new WordSearchGenerator(10, 10);
+        wordsearch.GenerateWordSearch(5, 10);
         wordsearch.WriteToFile();
     }
 
     WordSearchGenerator(int w, int h) {
         super(w, h);
-    }
-
-    public void WriteToFile() {
-        try {
-            FileWriter file = new FileWriter("wordsearch.txt");
-            file.write(this.width + " " + this.height + " " + this.generatedWords.length + "\n");
-            for (int i = 0; i < this.height; i++) {
-                for (int j = 0; j < this.width; j++) {
-                    file.write(this.wordsearch[j][i] + " ");
-                }
-                file.write("\n");
-            }
-
-            for (GeneratedWord word : this.generatedWords) {
-                file.write(word.word + "\n");
-            }
-
-            file.close();
-
-            System.out.println("Successfully wrote to file.");
-        } catch (IOException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
     }
 
     public void GenerateWordSearch(int numWords, int minLen) {
@@ -120,6 +95,30 @@ class WordSearch {
         this.width = w;
         this.height = h;
         this.wordsearch = new char[w][h];
+    }
+
+    public void WriteToFile() {
+        try {
+            FileWriter file = new FileWriter("wordsearch.txt");
+            file.write(this.width + " " + this.height + " " + this.words.length + "\n");
+            for (int i = 0; i < this.height; i++) {
+                for (int j = 0; j < this.width; j++) {
+                    file.write(this.wordsearch[j][i] + " ");
+                }
+                file.write("\n");
+            }
+
+            for (String word : this.words) {
+                file.write(word + "\n");
+            }
+
+            file.close();
+
+            System.out.println("Successfully wrote to file.");
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
     }
 }
 
